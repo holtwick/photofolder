@@ -2,7 +2,7 @@
 
 Command line tool for organizing images.
 
-> Download precompiled binary: photofolder.zip
+> Download precompiled binary: [photofolder.zip](https://github.com/holtwick/photofolder/raw/master/photofolder.zip)
 
 ```
 Usage: photofolder <options> [inputfile ...]
