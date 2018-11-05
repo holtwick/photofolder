@@ -9,8 +9,9 @@
 
  */
 
-#import <Foundation/Foundation.h>
-#import <CommonCrypto/CommonCrypto.h>
+@import CommonCrypto;
+@import Foundation;
+@import Cocoa;
 
 #include <getopt.h>
 
@@ -188,6 +189,7 @@ int optDry = 0;
 int optChecksum = 0;
 int optSize = 0;
 int optDimensions = 0;
+int optHEIC = 0;
 int optYearFolder = 0;
 int optMonthFolder = 0;
 int optMaker = 0;
@@ -217,6 +219,7 @@ static struct option longOpts[] = {
     { "maker",         no_argument,           &optMaker,        1 },
     { "smart-copy",    no_argument,           &optSmartCopy,    1 },
     { "smart-move",    no_argument,           &optSmartMove,    1 },
+    { "heic",          no_argument,           &optHEIC,         1 },
     { "version",       no_argument,           &optVersion,      1 },
     { "size",          no_argument,           &optSize,         1 },
     { NULL,            0,                     NULL,             0 }
@@ -244,7 +247,8 @@ void print_usage(char *name) {
              "      --maker                Add maker/ camera model to file name.\n"
              "      --year-folder          Subfolders per year.\n"
              "      --month-folder         Subfolders per year and month.\n"
-             "      --optimize             Convert to JPG and minimize size.\n"
+             "      --heic                 Convert HEIC to JPG and minimize size.\n"
+             // "      --optimize             Convert to JPG and minimize size.\n"
              "      --smart-copy           Most options for unique incremental copy.\n"
              "      --smart-move           Most options for unique incremental move.\n"
              "      --version              Version info.\n"
@@ -574,9 +578,24 @@ int command(int argc, char * argv[]) {
                             printf("Copy: %s => %s\n", [name UTF8String], [altName UTF8String]);
                         }
                         if (!optDry) {
-                            [[NSFileManager defaultManager] copyItemAtPath:name
-                                                                    toPath:altName
-                                                                     error:NULL];
+
+                            NSLog(@"heic %@ name %@", @(optHEIC), name);
+                            if (optHEIC && [[[name pathExtension] lowercaseString] isEqualToString:@"heic"]) {
+                                NSImage *image = [[NSImage alloc] initWithContentsOfFile:name];
+                                CGImageSourceRef imgSrc = CGImageSourceCreateWithData((CFDataRef)image.TIFFRepresentation, NULL);
+                                CGImageRef img = CGImageSourceCreateImageAtIndex(imgSrc, 0, NULL);
+                                CFRelease(imgSrc);
+                                CFAutorelease(img);
+                                NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCGImage:img];
+                                NSData *data = [bitmapImageRep representationUsingType:NSJPEGFileType properties:@{NSImageCompressionFactor:@0.95}];
+                                NSLog(@"heic %@ name %@", @(optHEIC), name);
+                                altName = [[altName stringByDeletingPathExtension] stringByAppendingPathExtension:@"jpg"];
+                                [data writeToFile:altName atomically:YES];
+                            } else {
+                                [[NSFileManager defaultManager] copyItemAtPath:name
+                                                                        toPath:altName
+                                                                         error:NULL];
+                            }
                         }
                     }
                     else {
