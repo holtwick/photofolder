@@ -1,12 +1,12 @@
 // (C)opyright 2018-08-24 Dirk Holtwick, holtwick.it. All rights reserved.
 
 /**
-
+ 
  Beispiele:
-
+ 
  photofolder -v --copy --dry --checksum --dimensions --maker --month-folder --destination=../Bilder3/ -- *
  photofolder -v --smart --destination=../Bilder3/ -- *
-
+ 
  */
 
 @import CommonCrypto;
@@ -54,13 +54,13 @@ NSString *sha1ShortOfFile(NSString *path) {
     if(fileHandle == NULL) {
         return nil;
     }
-
+    
     const unsigned int bufferSize = 16384;
     unsigned char buffer[bufferSize];
-
+    
     CC_SHA1_CTX context;
     CC_SHA1_Init(&context);
-
+    
     while(YES) {
         //    Read the file in chunks so a file of any size can be digested
         const size_t readSize = fread(buffer, 1, sizeof(buffer), fileHandle);
@@ -70,10 +70,10 @@ NSString *sha1ShortOfFile(NSString *path) {
         }
     }
     fclose(fileHandle);
-
+    
     unsigned char digest[CC_SHA1_DIGEST_LENGTH];
     CC_SHA1_Final(digest, &context);
-
+    
     NSMutableString *output = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
     for(int i = 0; i < MIN(3, CC_SHA1_DIGEST_LENGTH); i++) {
         [output appendFormat:@"%02x", digest[i]];
@@ -85,10 +85,10 @@ NSDictionary *analyzeImage(NSURL* url) {
     if (nil == url) {
         return nil;
     }
-
+    
     NSDictionary *props = nil;
     NSDate *exifDate = nil;
-
+    
     CGImageSourceRef _source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
     if (_source) {
         // get image properties (height, width, depth, metadata etc.) for display
@@ -114,7 +114,7 @@ NSDictionary *analyzeImage(NSURL* url) {
         //        [mFileSize setStringValue:[NSString stringWithFormat:@"%@ bytes",
         //                                   (__bridge id)CFDictionaryGetValue(fileProps, kCGImagePropertyFileSize)]];
         //        CFRelease(fileProps);
-
+        
         // EXIF
         id v = [[props objectForKey:(id)kCGImagePropertyExifDictionary] objectForKey:(id)kCGImagePropertyExifDateTimeOriginal];
         if(v) {
@@ -135,14 +135,14 @@ NSDictionary *analyzeImage(NSURL* url) {
                 exifDate = [NSDate dateFromString:v format:@"yyyy:MM:dd HH:mm:ss"];
             }
         }
-
+        
         CFRelease(_source);
     }
-
+    
     id markerString = @"";
     id m1 = [props[(id)kCGImagePropertyTIFFDictionary][(id)kCGImagePropertyTIFFMake] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     id m2 = [props[(id)kCGImagePropertyTIFFDictionary][(id)kCGImagePropertyTIFFModel] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-
+    
     if ([m1 length]) {
         markerString = [m1 componentsSeparatedByString:@" "][0];
         if ([m2 length]) {
@@ -157,9 +157,9 @@ NSDictionary *analyzeImage(NSURL* url) {
     else if ([m2 length]) {
         markerString = m2;
     }
-
+    
     // NSAssert(props != nil, @"Where is the props gone?");
-
+    
     NSDate *date = exifDate;
     if (!date) {
         NSDate *creationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:[url path] error:NULL] fileModificationDate];
@@ -170,7 +170,7 @@ NSDictionary *analyzeImage(NSURL* url) {
             date = creationDate ?: modificationDate;
         }
     }
-
+    
     return @{
              @"date": date ?: [NSNull null],
              @"width": props[(id)kCGImagePropertyPixelWidth] ?: [NSNull null],
@@ -261,8 +261,8 @@ int command(int argc, char * argv[]) {
     id destFolderName = nil;
     NSDate *sinceDate = nil;
     id insertName = @"";
-
-
+    
+    
     // the colon : indicates that an argument is required!
     // do not forget to repeat short chars here again!
     while ((ch = getopt_long(argc, argv, "vrco:s:n:w:h:dp?", longOpts, NULL)) != -1) {
@@ -334,17 +334,17 @@ int command(int argc, char * argv[]) {
             }
         }
     }
-
+    
     if (optHelp || argc <= 1) {
         print_usage(argv[0]);
         exit(1);
     }
-
+    
     if (optVersion) {
         printf("Version " __DATE__ "\n");
         exit(0);
     }
-
+    
     if (optSmartCopy || optSmartMove) {
         optYearFolder = 1;
         optMonthFolder = 1;
@@ -355,39 +355,39 @@ int command(int argc, char * argv[]) {
         //        optSize = 0;
         optDimensions = 0;
     }
-
+    
     optYearFolder = optYearFolder || optMonthFolder;
-
+    
     if (optYearFolder && !destFolderName) {
         printf("--destination required\n");
         return 0;
     }
-
+    
     NSUInteger numberOfFiles = 0;
     NSUInteger numberOfMovedOrCopiedFiles = 0;
     NSUInteger numberOfSkippedFiles = 0;
-
+    
     // Files
     argc -= optind;
     argv += optind;
-
+    
     // Move to folder without preserving subfolder structure
     //        NSLog(@"Destination folder: %@ %@", destFolderName, fileNames);
     if (destFolderName) {
         destFolderName = [destFolderName stringByStandardizingPath];
-
+        
         if (optVerbose) {
             printf("Destination path: %s\n", [destFolderName UTF8String]);
         }
-
+        
         BOOL isDir = NO;
         BOOL isFile = [[NSFileManager defaultManager] fileExistsAtPath:destFolderName isDirectory:&isDir];
-
+        
         if (isFile && !isDir) {
             printf("Destination path is an existing file: %s", [destFolderName UTF8String]);
             return 0;
         }
-
+        
         if (!isFile && !isDir && !optDry) {
             [[NSFileManager defaultManager] createDirectoryAtPath:destFolderName
                                       withIntermediateDirectories:YES
@@ -395,24 +395,24 @@ int command(int argc, char * argv[]) {
                                                             error:NULL];
         }
     }
-
+    
     // Input files and dirs
     id fileNames = [NSMutableSet set];
-
+    
     for (int i = 0; i < argc; ++i) {
         NSString *fileName = [NSString stringWithUTF8String:argv[i]];
-
+        
         BOOL isDir = NO;
         [[NSFileManager defaultManager] fileExistsAtPath:fileName isDirectory:&isDir];
-
+        
         if (optVerbose) {
             printf("Collect path: %s | is dir: %d\n", [fileName UTF8String], isDir);
         }
-
+        
         if (!isDir) {
             [fileNames addObject:fileName];
         }
-
+        
         else if (optRecursive) {
             NSString *subFileName;
             NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtPath:fileName];
@@ -425,207 +425,230 @@ int command(int argc, char * argv[]) {
             }
         }
     }
-
+    
     // Sorted
     fileNames = [[fileNames allObjects] sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
-
+    
     // For progress
     NSUInteger filesTotal = [fileNames count], filesVisited = 0;
     optProgress = optProgress && !optDry && !optVerbose;
-
+    
     // Flush immediately
     //    if (optProgress) {
     //        setbuf(stdout, NULL);
     //    }
-
+    
     // Iterate over the rest, the shell adds support for patterns
     for(NSString *name in fileNames) {
-
-        // Progress
-        if (optProgress && filesVisited > 0 && filesVisited % 25 == 0) {
-            printf("\r%lu%% | %lu of %lu files ",
-                   filesVisited * 100 / filesTotal,
-                   filesVisited,
-                   filesTotal);
-            fflush(stdout);
-        }
-        ++filesVisited;
-
-        // Skip hidden files
-        if ([[name lastPathComponent] hasPrefix:@"."]) {
-            continue;
-        }
-
-        BOOL isDir = NO;
-        BOOL isFile = [[NSFileManager defaultManager] fileExistsAtPath:name isDirectory:&isDir];
-        isFile = isFile && !isDir;
-
-        //            printf("-> %s\n", [name UTF8String]);
-
-        //            id files = @[name];
-        //            if (isDir) {
-        //                NSLog(@"Look into folder %@", name);
-        //            }
-
-        if (isFile) {
-            ++numberOfFiles;
-
-            id url = [NSURL fileURLWithPath:name];
-            id info = analyzeImage(url);
-            //                if (optVerbose) {
-            //                    NSLog(@"Testing file %@ %@", name, info);
-            //                }
-
-            id dimString = optDimensions ? info[@"dim"] : @"";
-            if ([dimString length]) {
-                dimString = [NSString stringWithFormat:@" %@", dimString];
+        @autoreleasepool {
+            // Progress
+            if (optProgress && filesVisited > 0 && filesVisited % 25 == 0) {
+                printf("\r%lu%% | %lu of %lu files ",
+                       filesVisited * 100 / filesTotal,
+                       filesVisited,
+                       filesTotal);
+                fflush(stdout);
             }
-
-            id makerName = optMaker ? info[@"maker"] : @"";
-
-            id checksumOrSize = @"";
-            if (optSize) {
-                checksumOrSize = [NSString stringWithFormat:@" %@", [[NSFileManager defaultManager] attributesOfItemAtPath:[url path] error:NULL][NSFileSize]];
+            ++filesVisited;
+            
+            // Skip hidden files
+            if ([[name lastPathComponent] hasPrefix:@"."]) {
+                continue;
             }
-            else if (optChecksum) {
-                checksumOrSize = [NSString stringWithFormat:@" %@", sha1ShortOfFile(name)];
-            }
-
-            NSDate *date = info[@"date"];
-
-            if (sinceDate) {
-                if (!date || [sinceDate timeIntervalSinceDate:date] > 0) {
-                    if (optVerbose || optDry) {
-                        printf("Skip old: %s\n", [name UTF8String]);
-                    }
-                    ++numberOfSkippedFiles;
-                    continue;
+            
+            BOOL isDir = NO;
+            BOOL isFile = [[NSFileManager defaultManager] fileExistsAtPath:name isDirectory:&isDir];
+            isFile = isFile && !isDir;
+            
+            //            printf("-> %s\n", [name UTF8String]);
+            
+            //            id files = @[name];
+            //            if (isDir) {
+            //                NSLog(@"Look into folder %@", name);
+            //            }
+            
+            if (isFile) {
+                ++numberOfFiles;
+                
+                id url = [NSURL fileURLWithPath:name];
+                id info = analyzeImage(url);
+                //                if (optVerbose) {
+                //                    NSLog(@"Testing file %@ %@", name, info);
+                //                }
+                
+                id dimString = optDimensions ? info[@"dim"] : @"";
+                if ([dimString length]) {
+                    dimString = [NSString stringWithFormat:@" %@", dimString];
                 }
-            }
-
-            if (date) {
-                NSString *body = [NSString stringWithFormat:@"%@%@%@%@%@",
-                                  [date formatDate:@"yyyy'-'MM'-'dd' 'HH'-'mm'-'ss'"],
-                                  checksumOrSize,
-                                  dimString,
-                                  makerName,
-                                  insertName
-                                  ];
-
-                if (optYearFolder) {
-                    id path = nil;
-                    id yearString = [date formatDate:@"yyyy"];
-                    if (optMonthFolder) {
-                        id monthString = [date formatDate:@"MM"];
-                        yearString = [yearString stringByAppendingPathComponent:monthString];
-                    }
-                    if ([destFolderName length]) {
-                        path = [destFolderName stringByAppendingPathComponent:yearString];
-                    }
-                    else {
-                        path = yearString;
-                    }
-                    if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
-                        if (optVerbose) {
-                            printf("Create destination folder: %s\n", [path UTF8String]);
-                        }
-                        if (!optDry) {
-                            [[NSFileManager defaultManager] createDirectoryAtPath:path
-                                                      withIntermediateDirectories:YES
-                                                                       attributes:nil
-                                                                            error:NULL];
-                        }
-                    }
-                    body = [path stringByAppendingPathComponent:body];
+                
+                id makerName = optMaker ? info[@"maker"] : @"";
+                
+                id checksumOrSize = @"";
+                if (optSize) {
+                    checksumOrSize = [NSString stringWithFormat:@" %@", [[NSFileManager defaultManager] attributesOfItemAtPath:[url path] error:NULL][NSFileSize]];
                 }
-                else if ([destFolderName length]) {
-                    body = [destFolderName stringByAppendingPathComponent:body];
+                else if (optChecksum) {
+                    checksumOrSize = [NSString stringWithFormat:@" %@", sha1ShortOfFile(name)];
                 }
-
-                NSInteger ct = 1;
-                NSString *altName = [NSString stringWithFormat:@"%@.%@",
-                                     body,
-                                     [[name pathExtension] lowercaseString]];
-
-
-                if (!name || !altName || [name isEqualToString:altName]) {
-                    if (optVerbose || optDry) {
-                        printf("Skip unchanged: %s\n", [name UTF8String]);
-                    }
-                    ++numberOfSkippedFiles;
-                    continue;
-                }
-
-                if ((optChecksum || optSize) && [[NSFileManager defaultManager] fileExistsAtPath:altName isDirectory:&isDir]) {
-                    if (optVerbose || optDry) {
-                        printf("Skip duplicate: %s\n", [name UTF8String]);
-                    }
-                    ++numberOfSkippedFiles;
-                    continue;
-                }
-
-                while ([[NSFileManager defaultManager] fileExistsAtPath:altName isDirectory:&isDir]) {
-                    altName = [NSString stringWithFormat:@"%@ %@.%@",
-                               body,
-                               @(ct++),
-                               [[name pathExtension] lowercaseString]];
-                }
-
-                if (name && altName) {
-                    ++numberOfMovedOrCopiedFiles;
-                    if (optCopy) {
+                
+                NSDate *date = info[@"date"];
+                
+                if (sinceDate) {
+                    if (!date || [sinceDate timeIntervalSinceDate:date] > 0) {
                         if (optVerbose || optDry) {
-                            printf("Copy: %s => %s\n", [name UTF8String], [altName UTF8String]);
+                            printf("Skip old: %s\n", [name UTF8String]);
                         }
-                        if (!optDry) {
-
-                            NSLog(@"heic %@ name %@", @(optHEIC), name);
-                            if (optHEIC && [[[name pathExtension] lowercaseString] isEqualToString:@"heic"]) {
-                                NSImage *image = [[NSImage alloc] initWithContentsOfFile:name];
-                                CGImageSourceRef imgSrc = CGImageSourceCreateWithData((CFDataRef)image.TIFFRepresentation, NULL);
-                                CGImageRef img = CGImageSourceCreateImageAtIndex(imgSrc, 0, NULL);
-                                CFRelease(imgSrc);
-                                CFAutorelease(img);
-                                NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCGImage:img];
-                                NSData *data = [bitmapImageRep representationUsingType:NSJPEGFileType properties:@{NSImageCompressionFactor:@0.95}];
-                                NSLog(@"heic %@ name %@", @(optHEIC), name);
-                                altName = [[altName stringByDeletingPathExtension] stringByAppendingPathExtension:@"jpg"];
-                                [data writeToFile:altName atomically:YES];
-                            } else {
-                                [[NSFileManager defaultManager] copyItemAtPath:name
-                                                                        toPath:altName
-                                                                         error:NULL];
+                        ++numberOfSkippedFiles;
+                        continue;
+                    }
+                }
+                
+                if (date) {
+                    NSString *body = [NSString stringWithFormat:@"%@%@%@%@%@",
+                                      [date formatDate:@"yyyy'-'MM'-'dd' 'HH'-'mm'-'ss'"],
+                                      checksumOrSize,
+                                      dimString,
+                                      makerName,
+                                      insertName
+                                      ];
+                    
+                    if (optYearFolder) {
+                        id path = nil;
+                        id yearString = [date formatDate:@"yyyy"];
+                        if (optMonthFolder) {
+                            id monthString = [date formatDate:@"MM"];
+                            yearString = [yearString stringByAppendingPathComponent:monthString];
+                        }
+                        if ([destFolderName length]) {
+                            path = [destFolderName stringByAppendingPathComponent:yearString];
+                        }
+                        else {
+                            path = yearString;
+                        }
+                        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+                            if (optVerbose) {
+                                printf("Create destination folder: %s\n", [path UTF8String]);
+                            }
+                            if (!optDry) {
+                                [[NSFileManager defaultManager] createDirectoryAtPath:path
+                                                          withIntermediateDirectories:YES
+                                                                           attributes:nil
+                                                                                error:NULL];
                             }
                         }
+                        body = [path stringByAppendingPathComponent:body];
                     }
-                    else {
+                    else if ([destFolderName length]) {
+                        body = [destFolderName stringByAppendingPathComponent:body];
+                    }
+                    
+                    NSInteger ct = 1;
+                    
+                    NSString *extension = [[name pathExtension] lowercaseString];
+                    NSString *srExtension = extension;
+                    if (optHEIC && [srExtension isEqualToString:@"heic"]) {
+                        extension = @"jpg";
+                    }
+                    
+                    NSString *altName = [NSString stringWithFormat:@"%@.%@",
+                                         body,
+                                         extension];
+                    
+                    
+                    if (!name || !altName || [name isEqualToString:altName]) {
                         if (optVerbose || optDry) {
-                            printf("Move: %s => %s\n", [name UTF8String], [altName UTF8String]);
+                            printf("Skip unchanged: %s\n", [name UTF8String]);
                         }
-                        if (!optDry) {
-                            [[NSFileManager defaultManager] moveItemAtPath:name
-                                                                    toPath:altName
-                                                                     error:NULL];
-                        }
+                        ++numberOfSkippedFiles;
+                        continue;
                     }
-
-                    // jpegoptim -p /Users/dirk/Desktop/IMG_20140902_093942\ copy\ 2.jpg -v --strip-iptc --strip-icc -m75
+                    
+                    if ((optChecksum || optSize) && [[NSFileManager defaultManager] fileExistsAtPath:altName isDirectory:&isDir]) {
+                        if (optVerbose || optDry) {
+                            printf("Skip duplicate: %s\n", [name UTF8String]);
+                        }
+                        ++numberOfSkippedFiles;
+                        continue;
+                    }
+                    
+                    while ([[NSFileManager defaultManager] fileExistsAtPath:altName isDirectory:&isDir]) {
+                        altName = [NSString stringWithFormat:@"%@ %@.%@",
+                                   body,
+                                   @(ct++),
+                                   extension];
+                    }
+                    
+                    if (name && altName) {
+                        ++numberOfMovedOrCopiedFiles;
+                        if (optCopy) {
+                            if (optVerbose || optDry) {
+                                printf("Copy: %s => %s\n", [name UTF8String], [altName UTF8String]);
+                            }
+                            if (!optDry) {
+                                
+                                if (optHEIC && [srExtension isEqualToString:@"heic"]) {
+                                    @autoreleasepool {
+                                        NSImage *image = [[NSImage alloc] initWithContentsOfFile:name];
+                                        CGImageSourceRef imgSrc = CGImageSourceCreateWithData((CFDataRef)image.TIFFRepresentation, NULL);
+                                        CGImageRef img = CGImageSourceCreateImageAtIndex(imgSrc, 0, NULL);
+                                        CFRelease(imgSrc);
+                                        CFAutorelease(img);
+                                        NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCGImage:img];
+                                        NSData *data = [bitmapImageRep representationUsingType:NSJPEGFileType properties:@{NSImageCompressionFactor:@0.95}];
+                                        [data writeToFile:altName atomically:YES];
+                                    }
+                                } else {
+                                    [[NSFileManager defaultManager] copyItemAtPath:name
+                                                                            toPath:altName
+                                                                             error:NULL];
+                                }
+                            }
+                        }
+                        else {
+                            if (optVerbose || optDry) {
+                                printf("Move: %s => %s\n", [name UTF8String], [altName UTF8String]);
+                            }
+                            if (!optDry) {
+                                if (optHEIC && [srExtension isEqualToString:@"heic"]) {
+                                    @autoreleasepool {
+                                        NSImage *image = [[NSImage alloc] initWithContentsOfFile:name];
+                                        CGImageSourceRef imgSrc = CGImageSourceCreateWithData((CFDataRef)image.TIFFRepresentation, NULL);
+                                        CGImageRef img = CGImageSourceCreateImageAtIndex(imgSrc, 0, NULL);
+                                        CFRelease(imgSrc);
+                                        CFAutorelease(img);
+                                        NSBitmapImageRep *bitmapImageRep = [[NSBitmapImageRep alloc] initWithCGImage:img];
+                                        NSData *data = [bitmapImageRep representationUsingType:NSJPEGFileType properties:@{NSImageCompressionFactor:@0.95}];
+                                        [data writeToFile:altName atomically:YES];
+                                    }
+                                    [[NSFileManager defaultManager] trashItemAtURL:[NSURL fileURLWithPath:name]
+                                                                  resultingItemURL:nil
+                                                                             error:NULL];
+                                } else {
+                                    [[NSFileManager defaultManager] moveItemAtPath:name
+                                                                            toPath:altName
+                                                                             error:NULL];
+                                }
+                            }
+                        }
+                        
+                        // jpegoptim -p /Users/dirk/Desktop/IMG_20140902_093942\ copy\ 2.jpg -v --strip-iptc --strip-icc -m75
+                    }
                 }
             }
         }
     }
-
+    
     if (optProgress) {
         printf("\r                                                         \r");
     }
-
+    
     printf("%lu files, %lu %s, %lu skipped.\n",
            (unsigned long)numberOfFiles,
            numberOfMovedOrCopiedFiles,
            optCopy ? "copied" : "moved",
            numberOfSkippedFiles
            );
-
+    
     return 0;
 }
 
