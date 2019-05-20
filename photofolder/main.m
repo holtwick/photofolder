@@ -253,6 +253,7 @@ void print_usage(char *name) {
              "      --smart-move           Most options for unique incremental move.\n"
              "      --version              Version info.\n"
              "\n"
+             "BUILD " __DATE__ " " __TIME__ "\n"
              );
 }
 
@@ -570,18 +571,31 @@ int command(int argc, char * argv[]) {
                         ++numberOfSkippedFiles;
                         continue;
                     }
-                    
+
+                    BOOL skip = NO;
                     while ([[NSFileManager defaultManager] fileExistsAtPath:altName isDirectory:&isDir]) {
+                        if ([[NSFileManager defaultManager] contentsEqualAtPath:name andPath:altName]) {
+                            skip = YES;
+                            break;
+                        }
                         altName = [NSString stringWithFormat:@"%@ %@.%@",
                                    body,
                                    @(ct++),
                                    extension];
                     }
+
+                    if (skip) {
+                        if (optVerbose || optDry) {
+                            printf("Skip equal content: %s\n", [name UTF8String]);
+                        }
+                        ++numberOfSkippedFiles;
+                        continue;
+                    }
                     
                     if (name && altName) {
                         ++numberOfMovedOrCopiedFiles;
                         if (optCopy) {
-                            if (optVerbose || optDry) {
+                            if (optVerbose /* || optDry */) {
                                 printf("Copy: %s => %s\n", [name UTF8String], [altName UTF8String]);
                             }
                             if (!optDry) {
@@ -605,7 +619,7 @@ int command(int argc, char * argv[]) {
                             }
                         }
                         else {
-                            if (optVerbose || optDry) {
+                            if (optVerbose /* || optDry */) {
                                 printf("Move: %s => %s\n", [name UTF8String], [altName UTF8String]);
                             }
                             if (!optDry) {
