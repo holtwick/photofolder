@@ -352,6 +352,7 @@ int command(int argc, char * argv[]) {
         optMaker = 1;
         optCopy = optSmartCopy;
         optRecursive = 1;
+        optHEIC = 1; // ???
         //        optChecksum = 0;
         //        optSize = 0;
         optDimensions = 0;
